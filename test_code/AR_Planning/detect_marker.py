@@ -1,19 +1,16 @@
-2# ARマーカーを認識するプログラム
+#距離を検出するプログラム
+
 import cv2
 import numpy as np
 import cv2.aruco as aruco
-from datetime import datetime
-from collections import deque
 from Ar_tools import Artools
-from camera_rotation import camera_rotation
-
 
 # ==============================ARマーカーの設定==============================
 dictionary = aruco.getPredefinedDictionary(aruco.DICT_ARUCO_ORIGINAL)
 # マーカーサイズの設定
-marker_length = 0.02  # マーカーの1辺の長さ（メートル）
-camera_matrix = np.load("mtx_new.npy")
-distortion_coeff = np.load("dist_new.npy")
+marker_length = 0.0215  # マーカーの1辺の長さ（メートル）
+camera_matrix = np.load("mtx.npy")
+distortion_coeff = np.load("dist.npy")
 
 # ==============================カメラの設定==============================
 
@@ -22,18 +19,21 @@ if int(camera) == 1:
     cap = cv2.VideoCapture(1)
 elif int(camera) == 2:
     from picamera2 import Picamera2 #laptopでは使わないため
+    #pivcamera2/libcameraはRPiのカメラモジュールを使うためのライブラリ
     from libcamera import controls #laptopでは使わないため
     picam2 = Picamera2()
-    size = (1200, 2800)
+    size = (1800, 1000)
     config = picam2.create_preview_configuration(
                 main={"format": 'XRGB8888', "size": size})
+    #カメラのフォーマット・サイズを指定
 
-    picam2.align_configuration(config)
+    picam2.align_configuration(config)#カメラの調整
     picam2.configure(config)
-    picam2.start()
-    # picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous})
+    picam2.start()#カメラの起動
     picam2.set_controls({"AfMode":0,"LensPosition":5.5})
-    lens = 5.5
+    #AfMOde:0は固定焦点，1は連続
+    #LensPosition：焦点距離を指定
+    lens = 5.5#焦点位置の指定
 
 # ====================================定数の定義====================================
 VEC_GOAL = [0.0,0.1968730025228114,0.3]
@@ -48,98 +48,49 @@ ar = Artools()
 # =======================================================================
 # ==============================メインループ==============================
 # =======================================================================
+
 while True:
-    
+    picam2.set_controls({"AfMode":0,"LensPosition":lens})
     # カメラ画像の取得
     if int(camera) == 1:
         ret, frame = cap.read()
+        #ret：取得できたかどうか0/1
+        #frame：取得した画像
     elif int(camera) == 2:
         frame = picam2.capture_array()
-        print(lens)
-        picam2.set_controls({"AfMode":0,"LensPosition":lens})
-    frame2 = cv2.rotate(frame,cv2.ROTATE_90_CLOCKWISE)
-    height = frame2.shape[0]
-    width = frame2.shape[1]
+    height = frame.shape[0]
+    width = frame.shape[1]
 
-    gray = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY) # グレースケールに変換
-    corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, dictionary) # ARマーカーの検出
-
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) # グレースケールに変換
+    corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, dictionary) # ARマーカーの検出（四隅の座標，arのid，辞書にないid）
 
     if ids is not None:
-        # aruco.drawDetectedMarkers(frame, corners, ids)
         for i in range(len(ids)):
-            if ids[i] in [0,1,2,3,4,5]:
-                image_points_2d = np.array(corners[i],dtype='double')
-                # print(corners[i])
-
-                rvec, tvec, _ = aruco.estimatePoseSingleMarkers(corners[i], marker_length, camera_matrix, distortion_coeff)
-                tvec = np.squeeze(tvec)
-                rvec = np.squeeze(rvec)
-                # 回転ベクトルからrodoriguesへ変換
-                rvec_matrix = cv2.Rodrigues(rvec)
-                rvec_matrix = rvec_matrix[0] # rodoriguesから抜き出し
-                transpose_tvec = tvec[np.newaxis, :].T # 並進ベクトルの転置
-                proj_matrix = np.hstack((rvec_matrix, transpose_tvec)) # 合成
-                euler_angle = cv2.decomposeProjectionMatrix(proj_matrix)[6]  # オイラー角への変換[deg]
-                prev = list(prev)
+            if ids[i] in [0,1,2,3,4,5]:#6面体のマーカーを認識
+                tvec= aruco.estimatePoseSingleMarkers(corners, marker_length, camera_matrix, distortion_coeff)[1]
+                #rvecは回転ベクトル，tvecは並進ベクトル
+                tvec = np.squeeze(tvec)#一次元にする
+                distance = np.linalg.norm(tvec)
+                prev= list(prev)
 
                 if ultra_count < 20:
-                    prev.append(tvec)
+                    prev.append(distance)
                     print("ARマーカーの位置を算出中")
-                    ultra_count += 1 #最初（位置リセット後も）は20回取得して平均取得
+                    ultra_count += 1
                 else:
-                    TorF = ar.outlier(tvec, prev, 0.2) # true:correct, false:outlier
+                    TorF = ar.outlier(distance, prev, ultra_count, 0.3)
+                    ultra_count += 1
                     if TorF:
                         reject_count = 0
-                        print("x : " + str(tvec[0]))
-                        print("y : " + str(tvec[1]))
-                        print("z : " + str(tvec[2]))
-                        print("norm : " + str((tvec[0]**2+tvec[1]**2+tvec[2]**2)**(1/2)))
-                        # print("roll : " + str(euler_angle[0]))
-                        # print("pitch: " + str(euler_angle[1]))
-                        # print("yaw  : " + str(euler_angle[2]))
-                        polar_exchange = ar.polar_change(tvec)
-                        print(f"yunosu_function_{ids[i]}:",polar_exchange)
+                        print("distance : ", distance)
                     else:
                         print("state of marker is rejected")
-                        reject_count += 1 # 拒否された回数をカウント
+                        reject_count += 1
                         if reject_count > 10: # 拒否され続けたらリセットしてARマーカーの基準を上書き（再計算）
                             ultra_count = 0
-                            reject_count = 0 #あってもなくても良い
+                            reject_count = 0
 
-                # 発見したマーカーから1辺が30センチメートルの正方形を描画
-                color = (0,255,0)
-                line = np.int32(np.squeeze(corners[i]))
-                cv2.polylines(frame,[line],True,color,2)
-                    
-                cv2.line(frame, (width//2,0), (width//2,height),(255,255,0))
-                distance, angle = ar.Correct(tvec,VEC_GOAL)
-                polar_exchange = ar.polar_change(tvec)
-                kabukin = camera_rotation(tvec, [0, 0, 0], [0, 0, 0], [0, 0, 0], 0, np.deg2rad(25), 0)
-                # print("kabuto_function:",distance,angle)
-                # print("yunosu_function:",polar_exchange)2
-                change_lens = -17.2*polar_exchange[0]+9.84
-                print(f"\033[32m{kabukin}\033[0m")
-                if change_lens < 3:
-                    lens = 3
-                elif change_lens > 10:
-                    lens = 10.5
-                else:
-                    lens = change_lens
-                    
-                
-                
-
-
-
-    # ====================================結果の表示===================================
-    # #　画像のリサイズを行う
-    frame2 = cv2.resize(frame2,None,fx=0.2,fy=0.2)
-    cv2.imshow('ARmarker', frame2)
-    key = cv2.waitKey(1)# キー入力の受付
-    if key == 27:  # ESCキーで終了
+    # 終了条件（例: 'q' キーを押す）
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        print("Exiting...")
         break
-
-# ==============================終了処理==============================
-cap.release()
-cv2.destroyAllWindows()
