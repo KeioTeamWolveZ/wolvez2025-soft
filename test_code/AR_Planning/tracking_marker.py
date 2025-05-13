@@ -71,9 +71,10 @@ while True:
     corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, dictionary) # ARマーカーの検出    
 
     if ids is not None:
+        focus_num = ids[0]
         # aruco.drawDetectedMarkers(frame, corners, ids)
-        for i in range(len(ids)):
-            if ids[i] in [0,1,2,3,4,5]:
+        if focus_num in ids:
+                #近かったら少し回転して，
                 image_points_2d = np.array(corners[i],dtype='double')
                 # print(corners[i])
 
