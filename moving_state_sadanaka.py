@@ -1,3 +1,7 @@
+##マーカーを見失ったときの動作を変えたい．今はyunosu_posを参照しているが，
+# 今回はyunosu_posの決定が難しいから違う手段を取りたい．
+#また，色を認識しているか，などを考慮していないから必要に応じて変更必要
+
 # ARマーカーを認識するプログラム
 import cv2
 import numpy as np
@@ -24,10 +28,10 @@ lost_marker_cnt = 0
 
 
 # ==============================colorの設定=============================
-lower_orange = np.array([105, 56, 0])
-upper_orange = np.array([150, 255, 255])
-color_tools = Color_tools(lower_orange,upper_orange)
-MAX_CONTOUR_THRESHOLD = 1000
+# lower_orange = np.array([105, 56, 0])
+# upper_orange = np.array([150, 255, 255])
+# color_tools = Color_tools(lower_orange,upper_orange)
+# MAX_CONTOUR_THRESHOLD = 1000
 
 # ==============================カメラの設定==============================
 cam_pint = 5.5
@@ -94,13 +98,13 @@ while True:
     gray = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY) # グレースケールに変換
     corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, dictionary) # ARマーカーの検出  
     
-    # オレンジ色のマスクを作成
-    mask_orange = color_tools.mask_color(frame,lower_orange,upper_orange)
-    # 輪郭を抽出して最大の面積を算出し、線で囲む
-    mask_orange,cX,cY,max_contour_area = color_tools.detect_color(mask_orange,MAX_CONTOUR_THRESHOLD)
-    #print("cX:",cX,"cY:",cY,"max_contour_area:",max_contour_area)
-    if cX:
-        cv2.circle(frame2,(width-cY,cX),30,100,-1)
+    # # オレンジ色のマスクを作成
+    # mask_orange = color_tools.mask_color(frame,lower_orange,upper_orange)
+    # # 輪郭を抽出して最大の面積を算出し、線で囲む
+    # mask_orange,cX,cY,max_contour_area = color_tools.detect_color(mask_orange,MAX_CONTOUR_THRESHOLD)
+    # #print("cX:",cX,"cY:",cY,"max_contour_area:",max_contour_area)
+    # if cX:
+    #     cv2.circle(frame2,(width-cY,cX),30,100,-1)
 
     if ids is not None:
         # aruco.DetectedMarkers(frame, corners, ids)
@@ -119,9 +123,9 @@ while True:
                 proj_matrix = np.hstack((rvec_matrix, transpose_tvec)) # 合成
                 euler_angle = cv2.decomposeProjectionMatrix(proj_matrix)[6]  # オイラー角への変換[deg]
                 prev = list(prev)
-                lost_marker_cnt = 0
+                #lost_marker_cnt = 0
 
-                if ultra_count < 1:
+                if ultra_count < 20:
                     prev.append(tvec)
                     print("ARマーカーの位置を算出中")
                     ultra_count += 1 #最初（位置リセット後も）は20回取得して平均取得
@@ -130,14 +134,12 @@ while True:
                     # print("prev_length: ",len(prev))
                     TorF = ar.outlier(tvec, prev, ultra_count, 0.3) # true:correct, false:outlier
                     ultra_count += 1
+                    find_marker = True
                     if TorF: # detected AR marker is reliable
                         reject_count = 0
                         print("x : " + str(tvec[0]))
                         print("y : " + str(tvec[1]))
                         print("z : " + str(tvec[2]))
-                        # print("roll : " + str(euler_angle[0]))
-                        # print("pitch: " + str(euler_angle[1]))
-                        # print("yaw  : " + str(euler_angle[2]))
                         tvec[0] = tvec[0]
                         polar_exchange = ar.polar_change(tvec)
                         print(f"yunosu_function_{ids[i]}:",polar_exchange)
@@ -158,7 +160,7 @@ while True:
                                 motor2.stop()
 
                                 motor2.go(60)   # 左にカーブ
-                                motor1.go(80) 
+                                motor1.go(70) 
                                 time.sleep(0.3)
                                 motor1.stop()
                                 motor2.stop()
@@ -171,15 +173,20 @@ while True:
                                 motor1.stop()
                                 motor2.stop()
 
-                                motor1.go(80) # 右にカーブ   
-                                motor2.go(60) 
+                                motor2.go(70) # 右にカーブ   
+                                motor1.go(60) 
                                 time.sleep(0.3)
                                 motor1.stop()
                                 motor2.stop()
 
                             else:
                                 print("---yaw角が範囲内です---")
-                                
+                                motor1.go(50)
+                                motor2.go(50)
+                                time.sleep(0.5)
+                                motor1.stop()
+                                motor2.stop()
+
                         elif distance_of_marker <= closing_threshold:
                             # ARマーカーまでの距離がclosing_thresholdより近い場合
                             if yaw > 20:
@@ -191,7 +198,7 @@ while True:
                                 motor2.stop()
 
                                 motor2.go(60)   # 左にカーブ
-                                motor1.go(80) 
+                                motor1.go(100) 
                                 time.sleep(0.3)
                                 motor1.stop()
                                 motor2.stop()
@@ -205,14 +212,30 @@ while True:
                                 motor2.stop()
 
                                 motor1.go(60)   # 右にカーブ
-                                motor2.go(80) 
+                                motor2.go(100)
                                 time.sleep(0.3)
                                 motor1.stop()
                                 motor2.stop()
 
                             else:
-                                print("---angle_of_markerが範囲内です---")
-                                
+                                print("---ARマーカーが近すぎます---")
+                                motor1.back(100) # 反転
+                                motor2.go(100)
+                                time.sleep(0.5)
+                                motor1.stop()
+                                motor2.stop()
+
+                                motor1.go(30)
+                                motor2.go(30)
+                                time.sleep(0.3)
+                                motor1.stop()
+                                motor2.stop()
+
+                                motor1.back(100) # 反転
+                                motor2.go(100)
+                                time.sleep(0.5)
+                                motor1.stop()
+                                motor2.stop()      
                             
                     else: # detected AR marker is not reliable
                         print("state of marker is rejected")
@@ -224,85 +247,85 @@ while True:
                             reject_count = 0 #あってもなくても良い
        
 
-                # 発見したマーカーから1辺が30センチメートルの正方形を描画
-                color = (0,255,0)
-                line = np.int32(np.squeeze(corners[i]))
-                cv2.polylines(frame,[line],True,color,2)
+                # # 発見したマーカーから1辺が30センチメートルの正方形を描画
+                # color = (0,255,0)
+                # line = np.int32(np.squeeze(corners[i]))
+                # cv2.polylines(frame,[line],True,color,2)
                     
-                cv2.line(frame, (width//2,0), (width//2,height),(255,255,0))
-                distance, angle = ar.Correct(tvec,VEC_GOAL)
-                polar_exchange = ar.polar_change(tvec)
-                # print("kabuto_function:",distance,angle)
-                # print("yunosu_function:",polar_exchange)
-                change_lens = -17.2*polar_exchange[0]+9.84
-                if change_lens < 3:
-                    lens = 3
-                elif change_lens > 10:
-                    lens = 10.5
-                else:
-                    lens = change_lens
+                # cv2.line(frame, (width//2,0), (width//2,height),(255,255,0))
+                # distance, angle = ar.Correct(tvec,VEC_GOAL)
+                # polar_exchange = ar.polar_change(tvec)
+                # # print("kabuto_function:",distance,angle)
+                # # print("yunosu_function:",polar_exchange)
+                # change_lens = -17.2*polar_exchange[0]+9.84
+                # if change_lens < 3:
+                #     lens = 3
+                # elif change_lens > 10:
+                #     lens = 10.5
+                # else:
+                #     lens = change_lens
     
     
-    elif last_pos == "Plan_A" :#and not find_marker: #ARマーカを認識していない時，認識するまでその場回転
+    elif last_pos == "Plan_A" and not find_marker: #ARマーカを認識していない時，認識するまでその場回転
         lost_marker_cnt+=1
-        if lost_marker_cnt > 10: # kore iru?
-            if cX:
-                cam_pint = 10.5
-                while cam_pint > 3.0: #pint change start
-                    if ids is None:
-                        cam_pint -= 0.5
-                        print("pint:",cam_pint)
-                        picam2.set_controls({"AfMode":0,"LensPosition":cam_pint})
-                        frame = picam2.capture_array()
-                        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) # グレースケールに変換
-                        corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, dictionary)
-                    else:
-                        break
-                if cam_pint <= 3.5:
-                    x,y = width-cY,cX
-                    cv2.line(frame2,[width//2,10],[width//2,1200],(255,0,255),5)
-                    cv2.line(frame2,[x,10],[x,1200],(255,0,255),5)
-                    
-                    cam_pint = 5.5 #default pint
-                    picam2.set_controls({"AfMode":0,"LensPosition":cam_pint})
-                    if x < width/2-100:
-                        print(f"color:ARマーカー探してます(LEFT) (x={x})")
-                        motor1.back(40)   #その場左回転
-                        motor2.go(60)
-                        time.sleep(0.5)
-                        motor1.stop()
-                        motor2.stop()
-                    elif x > width/2+100:
-                        print(f"color:ARマーカー探してます(RIGHT) (x={x})")
-                        motor1.go(60)   #その場左回転
-                        motor2.go(40)
-                        time.sleep(0.5)
-                        motor1.stop()
-                        motor2.stop()
-                    else:
-                        print(f"color:ARマーカー探してます(GO) (x={x})")
-                        motor1.go(50)   #その場左回転
-                        motor2.go(50)
-                        time.sleep(0.5)
-                        motor1.stop()
-                        motor2.stop()
+        # if lost_marker_cnt > 10: # kore iru?
+        #     if cX:
+        # cam_pint = 10.5
+        #     while cam_pint > 3.0: #pint change start
+        #         if ids is None:
+        #             cam_pint -= 0.5
+        #             print("pint:",cam_pint)
+        #             picam2.set_controls({"AfMode":0,"LensPosition":cam_pint})
+        #             frame = picam2.capture_array()
+        #             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) # グレースケールに変換
+        #             corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, dictionary)
+        #         else:
+        #             break
+        #     if cam_pint <= 3.5:
+        #         x,y = width-cY,cX
+        #         cv2.line(frame2,[width//2,10],[width//2,1200],(255,0,255),5)
+        #         cv2.line(frame2,[x,10],[x,1200],(255,0,255),5)
                 
-                                
-            elif yunosu_pos == "Left":
-                print("ARマーカー探してます(LEFT)")
-                motor1.back(60)   #その場左回転
-                motor2.go(60)
-                time.sleep(0.5)
-                motor1.stop()
-                motor2.stop()
-                    
-            elif yunosu_pos == "Right":
-                print("ARマーカー探してます(RIGHT)")
-                motor1.go(60)   #その場左回転
-                motor2.back(60)
-                time.sleep(0.5)
-                motor1.stop()
-                motor2.stop()
+        #         cam_pint = 5.5 #default pint
+        #         picam2.set_controls({"AfMode":0,"LensPosition":cam_pint})
+        #         if x < width/2-100:
+        #             print(f"color:ARマーカー探してます(LEFT) (x={x})")
+        #             motor1.back(40)   #その場左回転
+        #             motor2.go(60)
+        #             time.sleep(0.5)
+        #             motor1.stop()
+        #             motor2.stop()
+        #         elif x > width/2+100:
+        #             print(f"color:ARマーカー探してます(RIGHT) (x={x})")
+        #             motor1.go(60)   #その場左回転
+        #             motor2.go(40)
+        #             time.sleep(0.5)
+        #             motor1.stop()
+        #             motor2.stop()
+        #         else:
+        #             print(f"color:ARマーカー探してます(GO) (x={x})")
+        #             motor1.go(50)   #その場左回転
+        #             motor2.go(50)
+        #             time.sleep(0.5)
+        #             motor1.stop()
+        #             motor2.stop()
+            
+                            
+        # if yunosu_pos == "Left":
+        #     print("ARマーカー探してます(LEFT)")
+        #     motor1.back(60)   #その場左回転
+        #     motor2.go(60)
+        #     time.sleep(0.5)
+        #     motor1.stop()
+        #     motor2.stop()
+                
+        # elif yunosu_pos == "Right":
+        #     print("ARマーカー探してます(RIGHT)")
+        #     motor1.go(60)   #その場左回転
+        #     motor2.back(60)
+        #     time.sleep(0.5)
+        #     motor1.stop()
+        #     motor2.stop()
            
         
     elif last_pos == "Plan_B":# 進みながらARマーカーを探す
