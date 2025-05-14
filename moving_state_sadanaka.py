@@ -56,8 +56,8 @@ elif int(camera) == 2:
     lens = 5.5
 # ==================================motor setting==================================
 GPIO.setwarnings(False)
-motor1 = motor.motor(dir=-1)
-motor2 = motor.motor()
+motor1 = motor.motor(dir=-1)#左
+motor2 = motor.motor()#右
 go_value = 70
 # ====================================定数の定義====================================
 VEC_GOAL = [0.0,0.1968730025228114,0.3]
@@ -77,10 +77,8 @@ ar = Artools()
 # =======================================================================
 # ==============================メインループ==============================
 # =======================================================================
-yunosu_pos = "Left"
-last_pos = "Plan_A"
-count = 0
-
+sdnk_pos = "Left"
+plan = "Plan_A"
 
 while True:
     # picam2.set_controls({"AfMode":0,"LensPosition":lens})
@@ -149,93 +147,88 @@ while True:
                         yaw = euler_angle[2]
                         print("======",distance_of_marker)
                         
-                        if distance_of_marker > closing_threshold:
-                        # ARマーカーまでの距離がclosing_thresholdより遠い場合
+                        if tvec[0] > 0.1:
+                            motor1.go(70)
+                            motor2.back(70)
+                            time.sleep(0.5)
+                            motor1.stop()
+                            motor2.stop()
+                            time.sleep(0.5)    
+                            sdnk_pos = "Left"
+
+                        elif tvec[0] < -0.1:
+                            motor1.back(70)
+                            motor2.go(70)
+                            time.sleep(0.5)
+                            motor1.stop()
+                            motor2.stop()
+                            time.sleep(0.5)
+                            sdnk_pos = "Right"
+                        
+                        else:
                             if yaw > 20:
                                 print("---右に回転する---")
-                                motor2.go(40)   # 左モーターを前進
-                                motor1.back(40) # 右モーターを後退
+                                rgain = (closing_threshold - distance_of_marker)/closing_threshold
+                                motor1.go(40 + 50*rgain)   # 左モーターを前進
+                                motor2.back(40 + 50*rgain) # 右モーターを後退
                                 time.sleep(0.5)
                                 motor1.stop()
                                 motor2.stop()
-
+                                time.sleep(0.5)
                                 motor2.go(60)   # 左にカーブ
-                                motor1.go(70) 
-                                time.sleep(0.3)
+                                motor1.go(60 - 50*rgain) 
+                                time.sleep(0.5)
                                 motor1.stop()
                                 motor2.stop()
 
                             elif yaw < -20:
                                 print("---左に回転する---")
-                                motor1.go(40)   # 右モーターを前進
-                                motor2.back(40) # 左モーターを後退
+                                rgain = (closing_threshold - distance_of_marker)/closing_threshold
+                                motor2.go(40 + 50*rgain)   # 右モーターを前進
+                                motor1.back(40 + 50*rgain) # 左モーターを後退
                                 time.sleep(0.5)
                                 motor1.stop()
                                 motor2.stop()
 
-                                motor2.go(70) # 右にカーブ   
-                                motor1.go(60) 
+                                motor1.go(60 - 50*gain) # 右にカーブ   
+                                motor2.go(60) 
                                 time.sleep(0.3)
                                 motor1.stop()
                                 motor2.stop()
 
                             else:
-                                print("---yaw角が範囲内です---")
-                                motor1.go(50)
-                                motor2.go(50)
-                                time.sleep(0.5)
-                                motor1.stop()
-                                motor2.stop()
+                                if distance_of_marker >= closing_threshold+closing_range:
+                                    print("---yaw角が範囲内です---")
+                                    tgain = (distance_of_marker - closing_threshold)/closing_threshold
+                                    motor2.go(50+50*tgain)
+                                    motor1.go(50+50*tgain)
+                                    time.sleep(0.5)
+                                    motor2.stop()
+                                    motor1.stop()
+                                
+                                elif distance_of_marker >= closing_threshold-closing_range:
+                                    print("---ARマーカーの位置は適正です---")
 
-                        elif distance_of_marker <= closing_threshold:
-                            # ARマーカーまでの距離がclosing_thresholdより近い場合
-                            if yaw > 20:
-                                print("---右に回転する---")
-                                motor2.go(80)   # 左モーターを前進
-                                motor1.back(80) # 右モーターを後退
-                                time.sleep(0.5)
-                                motor1.stop()
-                                motor2.stop()
+                                elif distance_of_marker < closing_threshold-closing_range:
+                                    print("---ARマーカーが近すぎます---")
+                                    motor1.go(100) # 反転
+                                    motor2.back(100)
+                                    time.sleep(0.5)
+                                    motor1.stop()
+                                    motor2.stop()
 
-                                motor2.go(60)   # 左にカーブ
-                                motor1.go(100) 
-                                time.sleep(0.3)
-                                motor1.stop()
-                                motor2.stop()
+                                    motor1.go(30)
+                                    motor2.go(30)
+                                    time.sleep(0.3)
+                                    motor1.stop()
+                                    motor2.stop()
 
-                            elif yaw < -20:
-                                print("---左に回転する---")
-                                motor1.go(80)   # 右モーターを前進
-                                motor2.back(80) # 左モーターを後退
-                                time.sleep(0.5)
-                                motor1.stop()
-                                motor2.stop()
+                                    motor1.back(100) # 反転
+                                    motor2.go(100)
+                                    time.sleep(0.5)
+                                    motor1.stop()
+                                    motor2.stop()    
 
-                                motor1.go(60)   # 右にカーブ
-                                motor2.go(100)
-                                time.sleep(0.3)
-                                motor1.stop()
-                                motor2.stop()
-
-                            else:
-                                print("---ARマーカーが近すぎます---")
-                                motor1.back(100) # 反転
-                                motor2.go(100)
-                                time.sleep(0.5)
-                                motor1.stop()
-                                motor2.stop()
-
-                                motor1.go(30)
-                                motor2.go(30)
-                                time.sleep(0.3)
-                                motor1.stop()
-                                motor2.stop()
-
-                                motor1.back(100) # 反転
-                                motor2.go(100)
-                                time.sleep(0.5)
-                                motor1.stop()
-                                motor2.stop()      
                             
                     else: # detected AR marker is not reliable
                         print("state of marker is rejected")
@@ -266,10 +259,40 @@ while True:
                 #     lens = change_lens
     
     
-    elif last_pos == "Plan_A" and not find_marker: #ARマーカを認識していない時，認識するまでその場回転
+    elif plan == "Plan_A" and not find_marker: #ARマーカを認識していない時，認識するまでその場回転
+        print("Plan_A now")
         lost_marker_cnt+=1
-        # if lost_marker_cnt > 10: # kore iru?
-        #     if cX:
+        if lost_marker_cnt < 10:
+            if sdnk_pos == "Left":
+                motor2.go(30)
+                motor1.back(30)
+                time.sleep(0.5)
+                motor1.stop()
+                motor2.stop()
+            
+            elif sdnk_pos == "Right":
+                motor1.go(30)
+                motor2.back(30)
+                time.sleep(0.5)
+                motor1.stop()
+                motor2.stop()
+        
+        else:
+            plan = "Plan_B"
+            lost_marker_cnt = 0
+
+    elif plan == "Plan_B" and not find_marker: #ARマーカを認識していない時，認識するまでその場回転
+        print("Plan_B now")
+        motor1.go(60)
+        motor2.go(60)
+        time.sleep(0.5)
+        motor1.stop()
+        motor2.stop()
+
+        plan = "Plan_A"
+
+        
+        # if cX:
         # cam_pint = 10.5
         #     while cam_pint > 3.0: #pint change start
         #         if ids is None:
@@ -328,26 +351,26 @@ while True:
         #     motor2.stop()
            
         
-    elif last_pos == "Plan_B":# 進みながらARマーカーを探す
-        lost_marker_cnt+=1
-        print("lost marker cnt +1")
-        if lost_marker_cnt > 10:
-            if yunosu_pos == "Left":
-                gain1 = 30
-                gain2 = 0
-            else:
-                gain1 = 0
-                gain2 = 30
+    # elif last_pos == "Plan_B":# 進みながらARマーカーを探す
+    #     lost_marker_cnt+=1
+    #     print("lost marker cnt +1")
+    #     if lost_marker_cnt > 10:
+    #         if yunosu_pos == "Left":
+    #             gain1 = 30
+    #             gain2 = 0
+    #         else:
+    #             gain1 = 0
+    #             gain2 = 30
                 
-            print("Plan_B now")
-            motor1.go(70+gain1)
-            motor2.go(70+gain2)
-            time.sleep(2.5 + k)
-            motor1.stop()
-            motor2.stop()
-            last_pos = "Plan_A"
-            k += 1
-            print(k)
+    #         print("Plan_B now")
+    #         motor1.go(70+gain1)
+    #         motor2.go(70+gain2)
+    #         time.sleep(2.5 + k)
+    #         motor1.stop()
+    #         motor2.stop()
+    #         last_pos = "Plan_A"
+    #         k += 1
+    #         print(k)
             
     
     #elif cX:
