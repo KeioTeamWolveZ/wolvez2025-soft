@@ -149,46 +149,64 @@ while True:
                         
                         if distance_of_marker > closing_threshold:
                         # ARマーカーまでの距離がclosing_thresholdより遠い場合
-                            if tvec[0] > 0.03:
-                                print("---右に回転してtvec[0]を範囲内にします---")
-                                motor2.go(60)   # 左モーターを前進
-                                motor1.back(60) # 右モーターを後退
+                            if yaw > 20:
+                                print("---右に回転する---")
+                                motor2.go(40)   # 左モーターを前進
+                                motor1.back(40) # 右モーターを後退
                                 time.sleep(0.5)
                                 motor1.stop()
                                 motor2.stop()
 
-                                yunosu_pos = "Left"
-                                last_pos = "Plan_A"
+                                motor2.go(60)   # 左にカーブ
+                                motor1.go(80) 
+                                time.sleep(0.3)
+                                motor1.stop()
+                                motor2.stop()
 
-                            elif tvec[0] < -0.03:
-                                print("---左に回転してtvec[0]を範囲内にします---")
-                                motor1.go(60)   # 右モーターを前進
-                                motor2.back(60) # 左モーターを後退
+                            elif yaw < -20:
+                                print("---左に回転する---")
+                                motor1.go(40)   # 右モーターを前進
+                                motor2.back(40) # 左モーターを後退
                                 time.sleep(0.5)
                                 motor1.stop()
                                 motor2.stop()
 
-                                yunosu_pos = "Right"
-                                last_pos = "Plan_A"
+                                motor1.go(80) # 右にカーブ   
+                                motor2.go(60) 
+                                time.sleep(0.3)
+                                motor1.stop()
+                                motor2.stop()
 
                             else:
-                                print("---tvec[0]が範囲内です---")
+                                print("---yaw角が範囲内です---")
                                 
                         elif distance_of_marker <= closing_threshold:
                             # ARマーカーまでの距離がclosing_thresholdより近い場合
-                            if angle_of_marker > 10:
-                                print("---左に回転してangle_of_markerを範囲内にします---")
-                                motor1.go(60)   # 右モーターを前進
-                                motor2.back(60) # 左モーターを後退
+                            if yaw > 20:
+                                print("---右に回転する---")
+                                motor2.go(80)   # 左モーターを前進
+                                motor1.back(80) # 右モーターを後退
                                 time.sleep(0.5)
                                 motor1.stop()
                                 motor2.stop()
 
-                            elif angle_of_marker < -10:
-                                print("---右に回転してangle_of_markerを範囲内にします---")
-                                motor2.go(60)   # 左モーターを前進
-                                motor1.back(60) # 右モーターを後退
+                                motor2.go(60)   # 左にカーブ
+                                motor1.go(80) 
+                                time.sleep(0.3)
+                                motor1.stop()
+                                motor2.stop()
+
+                            elif yaw < -20:
+                                print("---左に回転する---")
+                                motor1.go(80)   # 右モーターを前進
+                                motor2.back(80) # 左モーターを後退
                                 time.sleep(0.5)
+                                motor1.stop()
+                                motor2.stop()
+
+                                motor1.go(60)   # 右にカーブ
+                                motor2.go(80) 
+                                time.sleep(0.3)
                                 motor1.stop()
                                 motor2.stop()
 
