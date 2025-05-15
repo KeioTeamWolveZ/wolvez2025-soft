@@ -104,13 +104,15 @@ while True:
     #     cv2.circle(frame2,(width-cY,cX),30,100,-1)
 
     if ids is not None:
-        if focus_num is None:
+        if focus_num == 10:
+            ids = ids.tolist()
             focus_num = ids[0]
             print("focus_num:",focus_num)
         # aruco.DetectedMarkers(frame, corners, ids)
         for i in range(len(ids)):
-            if ids[i] == focus_num:
-                image_points_2d = np.array(corners[focus_num],dtype='double')
+            if focus_num in ids:
+                k = ids.index(focus_num) 
+                image_points_2d = np.array(corners[k],dtype='double')
                 # print(corners[i])
 
                 rvec, tvec, _ = aruco.estimatePoseSingleMarkers(corners[i], marker_length, camera_matrix, distortion_coeff)
@@ -125,7 +127,7 @@ while True:
                 prev = list(prev)
                 #lost_marker_cnt = 0
 
-                if ultra_count < 20:
+                if ultra_count < 3:
                     prev.append(tvec)
                     print("ARマーカーの位置を算出中")
                     ultra_count += 1 #最初（位置リセット後も）は20回取得して平均取得
@@ -137,9 +139,9 @@ while True:
                     find_marker = True
                     if TorF: # detected AR marker is reliable
                         reject_count = 0
-                        print("x : " + str(tvec[0]))
-                        print("y : " + str(tvec[1]))
-                        print("z : " + str(tvec[2]))
+                        #print("x : " + str(tvec[0]))
+                        #print("y : " + str(tvec[1]))
+                        #print("z : " + str(tvec[2]))
                         tvec[0] = tvec[0]
                         polar_exchange = ar.polar_change(tvec)
                         print(f"yunosu_function_{ids[i]}:",polar_exchange)
@@ -150,6 +152,7 @@ while True:
                         print("======",distance_of_marker)
                         
                         if tvec[0] > 0.1:
+                            print("---ARマーカーが右にある---")
                             motor1.go(70)
                             motor2.back(70)
                             time.sleep(0.5)
@@ -159,6 +162,7 @@ while True:
                             sdnk_pos = "Left"
 
                         elif tvec[0] < -0.1:
+                            print("---ARマーカーが左にある---")
                             motor1.back(70)
                             motor2.go(70)
                             time.sleep(0.5)
@@ -203,8 +207,9 @@ while True:
                                 sdnk_pos = "Right" #focus_numを見失っているとしたら右側にあるはず
 
                             else:
+                                print("---yaw角が範囲内です---")
                                 if distance_of_marker >= closing_threshold+closing_range:
-                                    print("---yaw角が範囲内です---")
+                                    print("---ARマーカーが遠すぎます---")
                                     tgain = (distance_of_marker - closing_threshold)/closing_threshold
                                     motor2.go(50+50*tgain)
                                     motor1.go(50+50*tgain)
@@ -264,7 +269,7 @@ while True:
                         lens = 10.5
                     else:
                         lens = change_lens
-            else:
+            else:# focus_num not in ids
                 if sdnk_pos == "Left":
                     motor2.go(40)
                     motor1.back(40)
