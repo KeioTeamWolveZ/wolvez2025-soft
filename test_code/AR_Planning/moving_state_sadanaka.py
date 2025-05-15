@@ -325,7 +325,8 @@ while True:
             plan = "Plan_B"
             lost_marker_cnt = 0
 
-    elif plan == "Plan_B" and not find_marker: #ARマーカを認識していない時，認識するまでその場回転
+    elif plan == "Plan_B" and not find_marker:
+    #plan_AでARマーカーを認識できなかった場合、場所を変えて再びplan_Aへ
         print("Plan_B now")
         motor1.go(60)
         motor2.go(60)
