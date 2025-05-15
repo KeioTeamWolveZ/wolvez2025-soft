@@ -1,5 +1,3 @@
-##マーカーを見失ったときの動作を変えたい．今はyunosu_posを参照しているが，
-# 今回はyunosu_posの決定が難しいから違う手段を取りたい．
 #また，色を認識しているか，などを考慮していないから必要に応じて変更必要
 
 # ARマーカーを認識するプログラム
@@ -58,7 +56,7 @@ elif int(camera) == 2:
 GPIO.setwarnings(False)
 motor1 = motor.motor(dir=-1)#左
 motor2 = motor.motor()#右
-go_value = 70
+#go_value = 70
 # ====================================定数の定義====================================
 VEC_GOAL = [0.0,0.1968730025228114,0.3]
 ultra_count = 0
@@ -96,6 +94,7 @@ while True:
     gray = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY) # グレースケールに変換
     corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, dictionary) # ARマーカーの検出  
     
+
     # # オレンジ色のマスクを作成
     # mask_orange = color_tools.mask_color(frame,lower_orange,upper_orange)
     # # 輪郭を抽出して最大の面積を算出し、線で囲む
@@ -105,10 +104,13 @@ while True:
     #     cv2.circle(frame2,(width-cY,cX),30,100,-1)
 
     if ids is not None:
+        if focus_num is None:
+            focus_num = ids[0]
+            print("focus_num:",focus_num)
         # aruco.DetectedMarkers(frame, corners, ids)
         for i in range(len(ids)):
-            if ids[i] in [0,1,2,3,4,5]:
-                image_points_2d = np.array(corners[i],dtype='double')
+            if ids[i] == focus_num:
+                image_points_2d = np.array(corners[focus_num],dtype='double')
                 # print(corners[i])
 
                 rvec, tvec, _ = aruco.estimatePoseSingleMarkers(corners[i], marker_length, camera_matrix, distortion_coeff)
@@ -181,6 +183,8 @@ while True:
                                 motor1.stop()
                                 motor2.stop()
 
+                                sdnk_pos = "Left" #focus_numを見失っているとしたら左側にあるはず
+
                             elif yaw < -20:
                                 print("---左に回転する---")
                                 rgain = (closing_threshold - distance_of_marker)/closing_threshold
@@ -190,11 +194,13 @@ while True:
                                 motor1.stop()
                                 motor2.stop()
 
-                                motor1.go(60 - 50*gain) # 右にカーブ   
+                                motor1.go(60 - 50*rgain) # 右にカーブ   
                                 motor2.go(60) 
                                 time.sleep(0.3)
                                 motor1.stop()
                                 motor2.stop()
+
+                                sdnk_pos = "Right" #focus_numを見失っているとしたら右側にあるはず
 
                             else:
                                 if distance_of_marker >= closing_threshold+closing_range:
@@ -208,7 +214,8 @@ while True:
                                 
                                 elif distance_of_marker >= closing_threshold-closing_range:
                                     print("---ARマーカーの位置は適正です---")
-
+                                    break
+                                
                                 elif distance_of_marker < closing_threshold-closing_range:
                                     print("---ARマーカーが近すぎます---")
                                     motor1.go(100) # 反転
@@ -238,26 +245,58 @@ while True:
                         if reject_count > 10: # 拒否され続けたらリセットしてARマーカーの基準を上書き（再計算）
                             ultra_count = 0
                             reject_count = 0 #あってもなくても良い
-       
-
-                # # 発見したマーカーから1辺が30センチメートルの正方形を描画
-                # color = (0,255,0)
-                # line = np.int32(np.squeeze(corners[i]))
-                # cv2.polylines(frame,[line],True,color,2)
-                    
-                # cv2.line(frame, (width//2,0), (width//2,height),(255,255,0))
-                # distance, angle = ar.Correct(tvec,VEC_GOAL)
-                # polar_exchange = ar.polar_change(tvec)
-                # # print("kabuto_function:",distance,angle)
-                # # print("yunosu_function:",polar_exchange)
-                # change_lens = -17.2*polar_exchange[0]+9.84
-                # if change_lens < 3:
-                #     lens = 3
-                # elif change_lens > 10:
-                #     lens = 10.5
-                # else:
-                #     lens = change_lens
     
+
+                    # 発見したマーカーから1辺が30センチメートルの正方形を描画
+                    color = (0,255,0)
+                    line = np.int32(np.squeeze(corners[i]))
+                    cv2.polylines(frame,[line],True,color,2)
+                        
+                    cv2.line(frame, (width//2,0), (width//2,height),(255,255,0))
+                    distance, angle = ar.Correct(tvec,VEC_GOAL)
+                    polar_exchange = ar.polar_change(tvec)
+                    # print("kabuto_function:",distance,angle)
+                    # print("yunosu_function:",polar_exchange)
+                    change_lens = -17.2*polar_exchange[0]+9.84
+                    if change_lens < 3:
+                        lens = 3
+                    elif change_lens > 10:
+                        lens = 10.5
+                    else:
+                        lens = change_lens
+            else:
+                if sdnk_pos == "Left":
+                    motor2.go(40)
+                    motor1.back(40)
+                    time.sleep(0.5)
+                    motor1.stop()
+                    motor2.stop()
+                    time.sleep(0.5)
+
+                    motor1.go(80)
+                    motor2.go(60)
+                    time.sleep(0.5)
+                    motor1.stop()
+                    motor2.stop()
+
+                    plan = "Plan_A"
+                    
+                elif sdnk_pos == "Right":   
+                    motor1.go(40)
+                    motor2.back(40)
+                    time.sleep(0.5)
+                    motor1.stop()
+                    motor2.stop()
+                    time.sleep(0.5)
+
+                    motor1.go(60)
+                    motor2.go(80)
+                    time.sleep(0.5)
+                    motor1.stop()
+                    motor2.stop()
+
+                    plan = "Plan_A"
+
     
     elif plan == "Plan_A" and not find_marker: #ARマーカを認識していない時，認識するまでその場回転
         print("Plan_A now")
@@ -385,7 +424,7 @@ while True:
     # ====================================結果の表示===================================
     # #　画像のリサイズを行う
     print("find_marker",find_marker)
-    print("last_pos",last_pos)
+    print("last_pos",plan)
     frame = cv2.resize(frame2,None,fx=0.3,fy=0.3)
     cv2.imshow('ARmarker', frame)
     key = cv2.waitKey(1)# キー入力の受付
