@@ -12,73 +12,47 @@ import RPi.GPIO as GPIO
 import time
 
 from Color_tools import Color_tools
+import Image
 
+Img = Image.Image()
 
+Img = Img.setup()
 
-# ==============================ARマーカーの設定==============================
-dictionary = aruco.getPredefinedDictionary(aruco.DICT_ARUCO_ORIGINAL)
-# マーカーサイズの設定
-marker_length = 0.0215  # マーカーの1辺の長さ（メートル）
-camera_matrix = np.load("mtx.npy")
-distortion_coeff = np.load("dist.npy")
+# ==============================Colorの設定===============================
+lower_orange = Img.lower_color()
+upper_orange = Img.upper_color()
+color_tools = Img.color_tools()
+MAX_CONTOUR_THRESHOLD = Img.MAX_CONTOUR_THRESHOLD()
+
+# ==============================モーターの設定==============================
+motor1 = motor.motor(dir=-1)
+motor2 = motor.motor()
+
+# ==============================定数の設定==============================
+VEC_GOAL = [0.0, 0.1968730025228114, 0.3]
+ultra_count = 0
+reject_count = 0
+prev = np.array([])
+TorF = True
+sdnk_pos = "Left"
+plan = "Plan_A"
 find_marker = False
 lost_marker_cnt = 0
 
-
-# ==============================colorの設定=============================
-# lower_orange = np.array([105, 56, 0])
-# upper_orange = np.array([150, 255, 255])
-# color_tools = Color_tools(lower_orange,upper_orange)
-# MAX_CONTOUR_THRESHOLD = 1000
-
-# ==============================カメラの設定==============================
-cam_pint = 5.5
-
-# ~ camera = input("Which camera do you want to use? (laptop:1 or picamera:2): ")
-camera = 2
-if int(camera) == 1:
-    cap = cv2.VideoCapture(0)
-elif int(camera) == 2:
-    from picamera2 import Picamera2 #laptopでは使わないため
-    from libcamera import controls #laptopでは使わないため
-    picam2 = Picamera2()
-    size = (1200, 1800)
-    config = picam2.create_preview_configuration(
-                main={"format": 'XRGB8888', "size": size})
-
-    picam2.align_configuration(config)
-    picam2.configure(config)
-    picam2.start()
-    #picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous})
-    picam2.set_controls({"AfMode":0,"LensPosition":5.5})
-    lens = 5.5
-# ==================================motor setting==================================
-GPIO.setwarnings(False)
-motor1 = motor.motor(dir=-1)#左
-motor2 = motor.motor()#右
-#go_value = 70
-# ====================================定数の定義====================================
-VEC_GOAL = [0.0,0.1968730025228114,0.3]
-ultra_count = 0
-reject_count = 0 # 拒否された回数をカウントするための変数
-prev = np.array([])
-TorF = True
-
-# ====================================成功の定義====================================
+ # ==============================成功の定義==============================
 closing_threshold = 0.4
 closing_range = 0.02
 k = 0
 j = 0
+
 # ==============================クラスのインスタンス化==============================
 ar = Artools()
 
-# =======================================================================
-# ==============================メインループ==============================
-# =======================================================================
-sdnk_pos = "Left"
-plan = "Plan_A"
 
+camera = 2
 while True:
+    frame = Img.update_image(camera)[0] #(0:frame, 1:frame2)
+    frame2 = Img.update_image(camera)[1]
     # picam2.set_controls({"AfMode":0,"LensPosition":lens})
     # カメラ画像の取得
     if int(camera) == 1:
@@ -86,22 +60,19 @@ while True:
     elif int(camera) == 2:
         frame = picam2.capture_array()
     
-    frame2 = cv2.rotate(frame,cv2.ROTATE_90_CLOCKWISE)
     height = frame2.shape[0]
     width = frame2.shape[1]
 
+    corners = Img.get_corners()
+    ids = Img.get_ids()  
 
-    gray = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY) # グレースケールに変換
-    corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, dictionary) # ARマーカーの検出  
-    
-
-    # # オレンジ色のマスクを作成
-    # mask_orange = color_tools.mask_color(frame,lower_orange,upper_orange)
-    # # 輪郭を抽出して最大の面積を算出し、線で囲む
-    # mask_orange,cX,cY,max_contour_area = color_tools.detect_color(mask_orange,MAX_CONTOUR_THRESHOLD)
-    # #print("cX:",cX,"cY:",cY,"max_contour_area:",max_contour_area)
-    # if cX:
-    #     cv2.circle(frame2,(width-cY,cX),30,100,-1)
+    # オレンジ色のマスクを作成
+    mask_orange = color_tools.mask_color(frame,lower_orange,upper_orange)
+    # 輪郭を抽出して最大の面積を算出し、線で囲む
+    mask_orange,cX,cY,max_contour_area = color_tools.detect_color(mask_orange,MAX_CONTOUR_THRESHOLD)
+    #print("cX:",cX,"cY:",cY,"max_contour_area:",max_contour_area)
+    if cX:
+       cv2.circle(frame2,(width-cY,cX),30,100,-1)
 
     if ids is not None:
         if focus_num == 10:
@@ -115,18 +86,9 @@ while True:
                 image_points_2d = np.array(corners[k],dtype='double')
                 # print(corners[i])
 
-                rvec, tvec, _ = aruco.estimatePoseSingleMarkers(corners[i], marker_length, camera_matrix, distortion_coeff)
-                tvec = np.squeeze(tvec)
-                rvec = np.squeeze(rvec)
-                # 回転ベクトルからrodoriguesへ変換
-                rvec_matrix = cv2.Rodrigues(rvec)
-                rvec_matrix = rvec_matrix[0] # rodoriguesから抜き出し
-                transpose_tvec = tvec[np.newaxis, :].T # 並進ベクトルの転置
-                proj_matrix = np.hstack((rvec_matrix, transpose_tvec)) # 合成
-                euler_angle = cv2.decomposeProjectionMatrix(proj_matrix)[6]  # オイラー角への変換[deg]
-                prev = list(prev)
-                #lost_marker_cnt = 0
-
+                rvec = Img.get_rvec()
+                tvec = Img.get_tvec()
+            
                 if ultra_count < 3:
                     prev.append(tvec)
                     print("ARマーカーの位置を算出中")
@@ -143,12 +105,13 @@ while True:
                         #print("y : " + str(tvec[1]))
                         #print("z : " + str(tvec[2]))
                         tvec[0] = tvec[0]
-                        polar_exchange = ar.polar_change(tvec)
-                        print(f"yunosu_function_{ids[i]}:",polar_exchange)
-                        distance_of_marker = polar_exchange[0] #r
-                        angle_of_marker = polar_exchange[1] #theta
+                        #angle_of_marker = polar_exchange[1] #theta
+                        distance_of_marker = distance(tvec)
+                        angle_of_marker = angle(tvec)
+
                         # euler_angle[2] (Yaw角) を取得する
-                        yaw = euler_angle[2]
+                        yaw = Img.get_yaw()
+                        print(yaw)
                         print("======",distance_of_marker)
                         
                         if tvec[0] > 0.1:
@@ -337,94 +300,7 @@ while True:
         plan = "Plan_A"
 
         
-        # if cX:
-        # cam_pint = 10.5
-        #     while cam_pint > 3.0: #pint change start
-        #         if ids is None:
-        #             cam_pint -= 0.5
-        #             print("pint:",cam_pint)
-        #             picam2.set_controls({"AfMode":0,"LensPosition":cam_pint})
-        #             frame = picam2.capture_array()
-        #             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) # グレースケールに変換
-        #             corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, dictionary)
-        #         else:
-        #             break
-        #     if cam_pint <= 3.5:
-        #         x,y = width-cY,cX
-        #         cv2.line(frame2,[width//2,10],[width//2,1200],(255,0,255),5)
-        #         cv2.line(frame2,[x,10],[x,1200],(255,0,255),5)
-                
-        #         cam_pint = 5.5 #default pint
-        #         picam2.set_controls({"AfMode":0,"LensPosition":cam_pint})
-        #         if x < width/2-100:
-        #             print(f"color:ARマーカー探してます(LEFT) (x={x})")
-        #             motor1.back(40)   #その場左回転
-        #             motor2.go(60)
-        #             time.sleep(0.5)
-        #             motor1.stop()
-        #             motor2.stop()
-        #         elif x > width/2+100:
-        #             print(f"color:ARマーカー探してます(RIGHT) (x={x})")
-        #             motor1.go(60)   #その場左回転
-        #             motor2.go(40)
-        #             time.sleep(0.5)
-        #             motor1.stop()
-        #             motor2.stop()
-        #         else:
-        #             print(f"color:ARマーカー探してます(GO) (x={x})")
-        #             motor1.go(50)   #その場左回転
-        #             motor2.go(50)
-        #             time.sleep(0.5)
-        #             motor1.stop()
-        #             motor2.stop()
-            
-                            
-        # if yunosu_pos == "Left":
-        #     print("ARマーカー探してます(LEFT)")
-        #     motor1.back(60)   #その場左回転
-        #     motor2.go(60)
-        #     time.sleep(0.5)
-        #     motor1.stop()
-        #     motor2.stop()
-                
-        # elif yunosu_pos == "Right":
-        #     print("ARマーカー探してます(RIGHT)")
-        #     motor1.go(60)   #その場左回転
-        #     motor2.back(60)
-        #     time.sleep(0.5)
-        #     motor1.stop()
-        #     motor2.stop()
-           
         
-    # elif last_pos == "Plan_B":# 進みながらARマーカーを探す
-    #     lost_marker_cnt+=1
-    #     print("lost marker cnt +1")
-    #     if lost_marker_cnt > 10:
-    #         if yunosu_pos == "Left":
-    #             gain1 = 30
-    #             gain2 = 0
-    #         else:
-    #             gain1 = 0
-    #             gain2 = 30
-                
-    #         print("Plan_B now")
-    #         motor1.go(70+gain1)
-    #         motor2.go(70+gain2)
-    #         time.sleep(2.5 + k)
-    #         motor1.stop()
-    #         motor2.stop()
-    #         last_pos = "Plan_A"
-    #         k += 1
-    #         print(k)
-            
-    
-    #elif cX:
-    #    print("=============")
-        
-
-        # else:
-        #     print("認識していません")               
-
 
     time.sleep(0.05)
     # ====================================結果の表示===================================
