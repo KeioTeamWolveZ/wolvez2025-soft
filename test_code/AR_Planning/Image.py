@@ -70,7 +70,7 @@ class Image:
             elif int(self.camera) == 2:
                 self.frame = self.picam2.capture_array()
             self.frame2 = cv2.rotate(self.frame, cv2.ROTATE_90_CLOCKWISE)
-            return self.frame, self.frame2
+            return self.frame2
 
     def detect_marker(self):
             self.gray = cv2.cvtColor(self.frame2, cv2.COLOR_BGR2GRAY)# グレースケールに変換
@@ -83,9 +83,9 @@ class Image:
     def get_rejectedImgPoints(self):
             return self.rejectedImgPoints
     
-    def vec_of_marker(self):
+    def vec_of_marker(self, k):
         # ==============================ARマーカーの位置==============================
-        self.rvec, self.tvec, _objPoints = aruco.estimatePoseSingleMarkers(self.corners, self.marker_length, self.camera_matrix, self.distortion_coeff)
+        self.rvec, self.tvec, _objPoints = aruco.estimatePoseSingleMarkers(self.corners[k], self.marker_length, self.camera_matrix, self.distortion_coeff)
         self.tvec = np.squeeze(self.tvec)
         self.rvec = np.squeeze(self.rvec)
 
@@ -95,7 +95,7 @@ class Image:
         self.transpose_tvec = self.tvec[np.newaxis, :].T # 並進ベクトルの転置
         self.proj_matrix = np.hstack((self.rvec_matrix, self.transpose_tvec)) # 合成
         self.euler_angle = cv2.decomposeProjectionMatrix(self.proj_matrix)[6]  # オイラー角への変換[deg]
-        self.prev = list(self.prev)
+        
     
     def get_rvec(self):
         return self.rvec
@@ -104,12 +104,12 @@ class Image:
     def get_yaw(self):
         return self.euler_angle[2]
     
-    def distance(self, tvec): 
-        polar_exchange = Artools().polar_change(tvec)
+    def distance(self): 
+        self.polar_exchange = Artools().polar_change(self.tvec)
         return self.polar_exchange[0]
     
-    def angle(self, tvec):
-        polar_exchange = Artools().polar_change(tvec)
+    def angle(self):
+        self.polar_exchange = Artools().polar_change(self.tvec)
         return self.polar_exchange[1]
 
     

@@ -56,15 +56,14 @@ ar = Artools()
 
 
 while True:
-    frame = Img.update_image(camera)[0] #(0:frame, 1:frame2)
-    frame2 = Img.update_image(camera)[1]
+    frame2 = Img.update_image(camera)
     picam2 = Img.get_picam2()
     # picam2.set_controls({"AfMode":0,"LensPosition":lens})
     # カメラ画像の取得
     if int(camera) == 1:
-        ret, frame = cap.read()
+        ret, frame2 = cap.read()
     elif int(camera) == 2:
-        frame = picam2.capture_array()
+        frame2 = picam2.capture_array()
     
     height = frame2.shape[0]
     width = frame2.shape[1]
@@ -74,7 +73,7 @@ while True:
     ids = Img.get_ids()  
 
     # オレンジ色のマスクを作成
-    mask_orange = color_tools.mask_color(frame,lower_orange,upper_orange)
+    mask_orange = color_tools.mask_color(frame2,lower_orange,upper_orange)
     # 輪郭を抽出して最大の面積を算出し、線で囲む
     mask_orange,cX,cY,max_contour_area = color_tools.detect_color(mask_orange,MAX_CONTOUR_THRESHOLD)
     #print("cX:",cX,"cY:",cY,"max_contour_area:",max_contour_area)
@@ -114,8 +113,8 @@ while True:
                         #print("z : " + str(tvec[2]))
                         tvec[0] = tvec[0]
                         #angle_of_marker = polar_exchange[1] #theta
-                        distance_of_marker = distance()
-                        angle_of_marker = angle()
+                        distance_of_marker = Img.distance()
+                        angle_of_marker = Img.angle()
 
                         # euler_angle[2] (Yaw角) を取得する
                         yaw = Img.get_yaw()
