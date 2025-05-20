@@ -117,6 +117,36 @@ class Artools:
 
         return rot_vec
 
+    # ==================== from AR_outlier.py ====================
+    ## 作成者：正田
+    def outlier_dis(self,distance, prev, ultra_count, standard =0.2):
+        """
+        Check if the tvec is an outlier or not
+
+        Args:
+            tvec (np.array): translation vector
+            prev (list): list of previous translation vectors
+            standard (float): standard deviation
+        """
+        # print(prev)
+        # print(np.mean([i[0] for i in prev]))
+        if ultra_count == 20:
+            mean = np.median([i[0] for i in prev])
+            print("prev_num: 20")
+        else:
+            mean = np.median([i[0] for i in prev[-5:]]) 
+            print("prev_num: 5")
+
+        if abs(distance - mean) < standard :
+            prev.append(distance)
+            if len(prev) > 5:
+                prev.pop(0)
+            return True
+        else:
+            return False
+
+
+
 
 
 # ==================== test polar.py ====================
