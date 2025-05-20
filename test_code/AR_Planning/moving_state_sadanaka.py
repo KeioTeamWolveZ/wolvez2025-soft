@@ -15,14 +15,19 @@ from Color_tools import Color_tools
 import Image
 
 Img = Image.Image()
+camera = 2
 
-Img = Img.setup()
+Img.setup_AR()
+Img.setup_color()
+Img.setup_camera(camera)
 
 # ==============================Colorの設定===============================
 lower_orange = Img.lower_color()
 upper_orange = Img.upper_color()
-color_tools = Img.color_tools()
-MAX_CONTOUR_THRESHOLD = Img.MAX_CONTOUR_THRESHOLD()
+#color_tools = Img.color_tools()
+color_tools = Color_tools(lower_orange, upper_orange)
+MAX_CONTOUR_THRESHOLD =1000
+#MAX_CONTOUR_THRESHOLD = Img.MAX_CONTOUR_THRESHOLD()
 
 # ==============================モーターの設定==============================
 motor1 = motor.motor(dir=-1)
@@ -49,7 +54,7 @@ j = 0
 ar = Artools()
 
 
-camera = 2
+
 while True:
     frame = Img.update_image(camera)[0] #(0:frame, 1:frame2)
     frame2 = Img.update_image(camera)[1]
