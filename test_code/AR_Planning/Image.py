@@ -58,9 +58,11 @@ class Image:
             self.picam2.align_configuration(config)
             self.picam2.configure(config)
             self.picam2.start()
-            picam2.set_controls({"AfMode":0,"LensPosition":5.5})
+            self.picam2.set_controls({"AfMode":0,"LensPosition":5.5})
             self.lens = 5.5
 
+    def get_picam2(self):
+        return self.picam2
     def update_image(self, camera):
             # カメラ画像の取得
             if int(self.camera) == 1:
@@ -71,7 +73,7 @@ class Image:
             return self.frame, self.frame2
 
     def detect_marker(self):
-            self.gray = cv2.cvtColor(self.cam_pintframe2, cv2.COLOR_BGR2GRAY)# グレースケールに変換
+            self.gray = cv2.cvtColor(self.frame2, cv2.COLOR_BGR2GRAY)# グレースケールに変換
             self.corners, self.ids, self.rejectedImgPoints = aruco.detectMarkers(self.gray, self.dictionary)# ARマーカーの検出
         
     def get_corners(self):
@@ -83,7 +85,7 @@ class Image:
     
     def vec_of_marker(self):
         # ==============================ARマーカーの位置==============================
-        self.rvecs, self.tvecs, _objPoints = aruco.estimatePoseSingleMarkers(self.corners, self.marker_length, self.camera_matrix, self.distortion_coeff)
+        self.rvec, self.tvec, _objPoints = aruco.estimatePoseSingleMarkers(self.corners, self.marker_length, self.camera_matrix, self.distortion_coeff)
         self.tvec = np.squeeze(self.tvec)
         self.rvec = np.squeeze(self.rvec)
 
