@@ -70,7 +70,7 @@ class Image:
             elif int(self.camera) == 2:
                 self.frame = self.picam2.capture_array()
             self.frame2 = cv2.rotate(self.frame, cv2.ROTATE_90_CLOCKWISE)
-            return self.frame, self.frame2
+            return self.frame2
 
     def detect_marker(self):
             self.gray = cv2.cvtColor(self.frame2, cv2.COLOR_BGR2GRAY)# グレースケールに変換
