@@ -131,10 +131,10 @@ class Artools:
         # print(prev)
         # print(np.mean([i[0] for i in prev]))
         if ultra_count == 20:
-            mean = np.median([i[0] for i in prev])
+            mean = np.median( prev)
             print("prev_num: 20")
         else:
-            mean = np.median([i[0] for i in prev[-5:]]) 
+            mean = np.median( prev[-5:]) 
             print("prev_num: 5")
 
         if abs(distance - mean) < standard :
