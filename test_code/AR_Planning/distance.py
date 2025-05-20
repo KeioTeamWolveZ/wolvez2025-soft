@@ -83,7 +83,7 @@ while True:
                     print("ARマーカーの位置を算出中")
                     ultra_count += 1
                 else:
-                    TorF = ar.outlier(distance, prev, ultra_count, 0.3)
+                    TorF = ar.outlier_dis(distance, prev, ultra_count, 0.3)
                     ultra_count += 1
                     if TorF:
                         reject_count = 0
