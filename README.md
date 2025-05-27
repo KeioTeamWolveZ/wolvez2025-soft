@@ -1,5 +1,5 @@
-# wolvez2024-soft
-Mission code in Python for Keio Wolve'Z CanSat project 2024
+# wolvez2025-soft
+Mission code in Python for Keio Wolve'Z CanSat project 2025
 
 ## Hardware Requirements
 - Microcomputer
@@ -76,10 +76,12 @@ sudo bash setup_ap.sh
 
 ## Project Member
 - Project manager   
-  Karin Yoshino
+  Yunosuke Ito
+- Sub Project manager   
+  Yuto Sakamoto
 - Software (★: Part leader)  
-  ★Yuma Suzuki, Ko Ota, Kabuto Kimura, Yunosuke Ito, Hiroshi Yoshikawa
+  ★Hiroshi Yoshikawa, So Iizuka, Yunosuke Ito, Yui shoda, Riki Sadanaka, Koki Oe
 - Hardware (★: Part leader)  
-  ★Aine Koyama, Karin Yoshino, Hayate Kamiya, Yuto Sakamoto
+  ★Yuto Sakamoto, Mikiya Kishi, Masahiro Mura 
 - Circuit (★: Part leader)  
-  ★Ko Ota, Hiroshi Yoshikawa
+  ★Hiroshi Yoshikawa, Koki Oe
