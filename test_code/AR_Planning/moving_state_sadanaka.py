@@ -226,7 +226,7 @@ while True:
 
                 # 発見したマーカーから1辺が30センチメートルの正方形を描画
                 color = (0,255,0)
-                line = np.int32(np.squeeze(corners[i]))
+                line = np.int32(np.squeeze(corners[k]))
                 cv2.polylines(frame,[line],True,color,2)
                     
                 cv2.line(frame, (width//2,0), (width//2,height),(255,255,0))

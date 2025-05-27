@@ -112,7 +112,9 @@ class Image:
         self.polar_exchange = Artools().polar_change(self.tvec)
         return self.polar_exchange[1]
 
-    
+if __name__=='__main__':
+    img = Image()
+    img.setup_camera(2)    
     
 
 
