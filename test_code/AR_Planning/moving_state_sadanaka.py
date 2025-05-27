@@ -21,6 +21,8 @@ Img.setup_AR()
 Img.setup_color()
 Img.setup_camera(camera)
 
+focus_num = 10
+
 # ==============================Colorの設定===============================
 lower_orange = Img.lower_color()
 upper_orange = Img.upper_color()
@@ -81,8 +83,8 @@ while True:
        cv2.circle(frame2,(width-cY,cX),30,100,-1)
 
     if ids is not None:
-        if focus_num == None:
-            ids = ids.tolist()
+        ids = ids.tolist()
+        if focus_num == 10:
             focus_num = ids[0]
             print("focus_num:",focus_num)
         # aruco.DetectedMarkers(frame, corners, ids)
@@ -315,10 +317,10 @@ while True:
     print("find_marker",find_marker)
     print("last_pos",plan)
     frame = cv2.resize(frame2,None,fx=0.3,fy=0.3)
-    cv2.imshow('ARmarker', frame)
-    key = cv2.waitKey(1)# キー入力の受付
-    if key == 27:  # ESCキーで終了
-        break
+#    cv2.imshow('ARmarker', frame)
+ #   key = cv2.waitKey(1)# キー入力の受付
+  #  if key == 27:  # ESCキーで終了
+   #     break
 
 # ==============================終了処理==============================
 cap.release()
