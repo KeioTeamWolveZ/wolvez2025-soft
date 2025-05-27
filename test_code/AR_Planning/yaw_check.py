@@ -1,14 +1,10 @@
 # ARマーカーを認識するプログラム
-import cv2
-import numpy as np
-import cv2.aruco as aruco
 import Image
 
 Img = Image.Image()
 camera = 2
 
 Img.setup_AR()
-Img.setup_color()
 Img.setup_camera(camera)
 
 ar = Artools()
