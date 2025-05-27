@@ -31,19 +31,16 @@ ar = Artools()
 # =======================================================================
 
 while True:
-    picam2.set_controls({"AfMode":0,"LensPosition":lens})
     # カメラ画像の取得
     frame = image.updata_image(camera)
-
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) # グレースケールに変換
-    corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, dictionary) # ARマーカーの検出（四隅の座標，arのid，辞書にないid）
+    image.detect_marker()
+    corners, ids, rejectedImgPoints = image.get_corners(), image.get_ids(), image.get_rejectedImgPoints() # ARマーカーの検出（四隅の座標，arのid，辞書にないid）
 
     if ids is not None:
         for i in range(len(ids)):
             if ids[i] in [0,1,2,3,4,5]:#6面体のマーカーを認識
-                tvec= aruco.estimatePoseSingleMarkers(corners, marker_length, camera_matrix, distortion_coeff)[1]
+                tvec= image.get_tvec() # マーカーの並進ベクトル
                 #rvecは回転ベクトル，tvecは並進ベクトル
-                tvec = np.squeeze(tvec)#一次元にする
                 distance = np.linalg.norm(tvec)
                 prev= list(prev)
 

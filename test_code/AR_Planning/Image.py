@@ -95,7 +95,6 @@ class Image:
         self.transpose_tvec = self.tvec[np.newaxis, :].T # 並進ベクトルの転置
         self.proj_matrix = np.hstack((self.rvec_matrix, self.transpose_tvec)) # 合成
         self.euler_angle = cv2.decomposeProjectionMatrix(self.proj_matrix)[6]  # オイラー角への変換[deg]
-        self.prev = list(self.prev)
     
     def get_rvec(self):
         return self.rvec
