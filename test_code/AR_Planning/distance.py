@@ -32,7 +32,7 @@ ar = Artools()
 
 while True:
     # カメラ画像の取得
-    frame = image.updata_image(camera)
+    frame = image.update_image(camera)
     image.detect_marker()
     corners, ids, rejectedImgPoints = image.get_corners(), image.get_ids(), image.get_rejectedImgPoints() # ARマーカーの検出（四隅の座標，arのid，辞書にないid）
 
