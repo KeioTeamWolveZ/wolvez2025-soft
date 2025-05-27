@@ -14,7 +14,7 @@ from Image import Image
 image = Image()
 image.setup_AR()
 camera = input("Which camera do you want to use? (laptop:1 or picamera:2): ")
-image.camera(camera)
+image.setup_camera(camera)
 
 # ====================================定数の定義====================================
 VEC_GOAL = [0.0,0.1968730025228114,0.3]
