@@ -9,36 +9,12 @@ from Ar_tools import Artools
 import motor
 import RPi.GPIO as GPIO
 import time
+from Image import Image
 
-# ==============================ARマーカーの設定==============================
-dictionary = aruco.getPredefinedDictionary(aruco.DICT_ARUCO_ORIGINAL)
-# マーカーサイズの設定
-marker_length = 0.0215  # マーカーの1辺の長さ（メートル）
-camera_matrix = np.load("mtx.npy")
-distortion_coeff = np.load("dist.npy")
-
-# ==============================カメラの設定==============================
-
+image = Image()
+image.setup_AR()
 camera = input("Which camera do you want to use? (laptop:1 or picamera:2): ")
-if int(camera) == 1:
-    cap = cv2.VideoCapture(1)
-elif int(camera) == 2:
-    from picamera2 import Picamera2 #laptopでは使わないため
-    #pivcamera2/libcameraはRPiのカメラモジュールを使うためのライブラリ
-    from libcamera import controls #laptopでは使わないため
-    picam2 = Picamera2()
-    size = (1800, 1000)
-    config = picam2.create_preview_configuration(
-                main={"format": 'XRGB8888', "size": size})
-    #カメラのフォーマット・サイズを指定
-
-    picam2.align_configuration(config)#カメラの調整
-    picam2.configure(config)
-    picam2.start()#カメラの起動
-    picam2.set_controls({"AfMode":0,"LensPosition":5.5})
-    #AfMOde:0は固定焦点，1は連続
-    #LensPosition：焦点距離を指定
-    lens = 5.5#焦点位置の指定
+image.camera(camera)
 
 # ====================================定数の定義====================================
 VEC_GOAL = [0.0,0.1968730025228114,0.3]
@@ -57,14 +33,7 @@ ar = Artools()
 while True:
     picam2.set_controls({"AfMode":0,"LensPosition":lens})
     # カメラ画像の取得
-    if int(camera) == 1:
-        ret, frame = cap.read()
-        #ret：取得できたかどうか0/1
-        #frame：取得した画像
-    elif int(camera) == 2:
-        frame = picam2.capture_array()
-    height = frame.shape[0]
-    width = frame.shape[1]
+    frame = image.updata_image(camera)
 
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) # グレースケールに変換
     corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, dictionary) # ARマーカーの検出（四隅の座標，arのid，辞書にないid）
