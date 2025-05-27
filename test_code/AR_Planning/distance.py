@@ -41,8 +41,8 @@ while True:
             if ids[i] in [0,1,2,3,4,5]:#6面体のマーカーを認識
                 image.cal_dis()
                 distance = image.get_distance() # ARマーカーの距離を計算
-
-
+                prev= list(prev)
+                
                 if ultra_count < 20:
                     prev.append(distance)
                     print("ARマーカーの位置を算出中")
