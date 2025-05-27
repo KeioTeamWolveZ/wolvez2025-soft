@@ -96,6 +96,14 @@ class Image:
         self.proj_matrix = np.hstack((self.rvec_matrix, self.transpose_tvec)) # 合成
         self.euler_angle = cv2.decomposeProjectionMatrix(self.proj_matrix)[6]  # オイラー角への変換[deg]
     
+    def cal_dis(self):
+        self.rvec, self.tvec, _objPoints = aruco.estimatePoseSingleMarkers(self.corners, self.marker_length, self.camera_matrix, self.distortion_coeff)
+        self.tvec = np.squeeze(self.tvec)
+        self.distance = np.linalg.norm(self.tvec)
+
+    def get_distance(self):
+        return self.distance
+
     def get_rvec(self):
         return self.rvec
     def get_tvec(self):
