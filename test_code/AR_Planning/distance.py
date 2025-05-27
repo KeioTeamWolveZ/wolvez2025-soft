@@ -39,6 +39,7 @@ while True:
     if ids is not None:
         for i in range(len(ids)):
             if ids[i] in [0,1,2,3,4,5]:#6面体のマーカーを認識
+                image.vec_of_marker()
                 tvec= image.get_tvec() # マーカーの並進ベクトル
                 #rvecは回転ベクトル，tvecは並進ベクトル
                 distance = np.linalg.norm(tvec)
